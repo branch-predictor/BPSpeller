@@ -2,13 +2,14 @@
 //
 
 #include "stdafx.h"
-#include "BPSPELLer.h"
+#include "BPSpeller.h"
 
 BPSPELLER_API BPSpellerCtxPtr InitializeSpeller(void)
 {
 	BPSpellerCtxPtr ctx = (BPSpellerCtxPtr)calloc(1, sizeof(BPSpellerCtx));
+	if (!ctx)
+		return nullptr;
 
-	ISpellCheckerFactory* spellCheckerFactory = nullptr;
 	HRESULT hr = CoCreateInstance(__uuidof(SpellCheckerFactory), nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&ctx->iface));
 	if (FAILED(hr))
 	{
@@ -110,8 +111,6 @@ BPSPELLER_API int GetSuggestions(BPSpellerCtxPtr ctx, wchar_t* tocheck, wchar_t*
 	IEnumSpellingError* spell_error_enum = nullptr;
 	ISpellingError* spelling_error = nullptr;
 	IEnumString* sug_enum = nullptr;
-	ULONG startIndex = 0;
-	ULONG errorLength = 0;
 	CORRECTIVE_ACTION action = CORRECTIVE_ACTION_NONE;
 	int spell_status = BPSPELLER_OK;
 	size_t max_num = 0;

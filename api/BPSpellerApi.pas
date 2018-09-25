@@ -1,5 +1,11 @@
 unit BPSpellerApi;
 
+// Remove dot (define BPSPELLER_STATIC) to have your app link statically
+// (during startup) to BPSpeller.dll and make it unable to run without it.
+// Keep the dot (undefine BPSPELLER_STATIC) to try to load it on first
+// call to InitializeSpeller.
+{.$DEFINE BPSPELLER_STATIC}
+
 interface
 
 uses Windows, Sysutils, Classes, ActiveX;
@@ -28,21 +34,84 @@ const
 // Invalid arguments were passed
   BPSPELLER_INVALID_ARGS = -6;
 
+  BPSpellerDll = 'BPSpeller.dll';
+
+{$IFDEF BPSPELLER_STATIC}
 function InitializeSpeller: pointer;
-  cdecl; external 'BPSpeller.dll';
+  cdecl; external BPSpellerDll;
 function SetSpellerLanguage(ctx: pointer; lang: PWideChar): integer;
-  cdecl; external 'BPSpeller.dll';
+  cdecl; external BPSpellerDll;
 function CheckWord(ctx: pointer; word: PWideChar): integer;
-  cdecl; external 'BPSpeller.dll';
+  cdecl; external BPSpellerDll;
 function GetSuggestions(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer;
-  cdecl; external 'BPSpeller.dll';
+  cdecl; external BPSpellerDll;
 function FreeSpeller(ctx: pointer): integer;
-  cdecl; external 'BPSpeller.dll';
+  cdecl; external BPSpellerDll;
 procedure FreeSuggestions(ctx: pointer);
-  cdecl; external 'BPSpeller.dll';
+  cdecl; external BPSpellerDll;
+{$ELSE}
+var
+ SetSpellerLanguage: function(ctx: pointer; lang: PWideChar): integer; cdecl;
+ CheckWord: function (ctx: pointer; word: PWideChar): integer; cdecl;
+ GetSuggestions: function(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer; cdecl;
+ FreeSpeller: function(ctx: pointer): integer; cdecl;
+ FreeSuggestions: procedure(ctx: pointer); cdecl;
+
+function InitializeSpeller: pointer;
+{$ENDIF}
 
 implementation
 
-// todo: dynamic loading
+{$IFNDEF BPSPELLER_STATIC}
+var
+ _bplibhandle: THandle = 0;
+ _InitializeSpeller: function: pointer; cdecl;
+
+function InitializeSpeller: pointer;
+var
+ bad_dll: boolean;
+
+	function ImportProc(const name: string): Pointer;
+	begin;
+	result:=GetProcAddress(_bplibhandle, pointer(name));
+	if result=nil then
+		bad_dll:=true;
+	end;
+
+begin;
+// it won't work on Windows 7 and older, don't bother trying.
+if (Win32MajorVersion < 6) or (Win32MajorVersion = 6) and (Win32MinorVersion < 2) then
+	begin;
+	result:=nil;
+	exit;
+	end;
+// try to load and import functions
+bad_dll:=false;
+if _bplibhandle = 0 then
+	begin;
+	_bplibhandle:=LoadLibrary(BPSpellerDll);
+	if _bplibhandle=0 then
+		begin;
+		result:=nil;
+		exit;
+		end;
+	_InitializeSpeller:=ImportProc('InitializeSpeller');
+	SetSpellerLanguage:=ImportProc('SetSpellerLanguage');
+	CheckWord:=ImportProc('CheckWord');
+	GetSuggestions:=ImportProc('GetSuggestions');
+	FreeSpeller:=ImportProc('FreeSpeller');
+	FreeSuggestions:=ImportProc('FreeSuggestions');
+	if bad_dll then
+		begin;
+		// not all imported, bail out
+		FreeLibrary(_bplibhandle);
+		_bplibhandle:=0;
+		result:=nil;
+		exit;
+		end;
+	end;
+result:=_InitializeSpeller;
+end;
+{$ENDIF}
 
 end.
