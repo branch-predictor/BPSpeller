@@ -49,6 +49,8 @@ BPSPELLER_API int FreeSpeller(BPSpellerCtxPtr ctx)
 	if (!ctx)
 		return BPSPELLER_BAD_CTX;
 	FreeSuggestions(ctx);
+	if (ctx->last_errors)
+		free((void*)(ctx->last_errors));
 	if (ctx->spell_checker)
 		ctx->spell_checker->Release();
 	if (ctx->iface)
@@ -76,6 +78,55 @@ BPSPELLER_API int CheckWord(BPSpellerCtxPtr ctx, wchar_t* tocheck)
 			spelling_error->Release();
 		spell_error_enum->Release();
 		return spell_status;
+	} else {
+		return BPSPELLER_LANG_IFACE_ERROR;
+	}
+}
+
+BPSPELLER_API int CheckSentence(BPSpellerCtxPtr ctx, wchar_t* tocheck, BPSpellError** errors)
+{
+	if (!ctx)
+		return BPSPELLER_BAD_CTX;
+	if (!ctx->spell_checker)
+		return BPSPELLER_LANG_NOT_SET;
+	if (!tocheck)
+		return BPSPELLER_INVALID_ARGS;
+	IEnumSpellingError* spell_error_enum;
+	if (SUCCEEDED(ctx->spell_checker->Check(tocheck, &spell_error_enum))) {
+		int misspelled_count = 0;
+		ISpellingError* spelling_error = nullptr;
+		while (S_OK == spell_error_enum->Next(&spelling_error)) {
+			
+			if (ctx->error_buf_size  <= misspelled_count) {
+				int newsize = (ctx->error_buf_size > 0) ? ctx->error_buf_size * 2 : 4;
+				BPSpellError* newbuf = (BPSpellError*)realloc((void*)ctx->last_errors, newsize * sizeof(BPSpellError));
+				if (newbuf) {
+					ctx->last_errors = newbuf;
+					ctx->error_buf_size = newsize;
+				} else {
+					spelling_error->Release();
+					return BPSPELLER_LANG_IFACE_ERROR; // TODO: proper error
+				}
+			}
+
+			ULONG res; 
+			spelling_error->get_Length(&res);
+			ctx->last_errors[misspelled_count].error_length = res;
+
+			spelling_error->get_StartIndex(&res);
+			ctx->last_errors[misspelled_count].starting_at = res;
+
+			CORRECTIVE_ACTION action;
+			spelling_error->get_CorrectiveAction(&action);
+			ctx->last_errors[misspelled_count].error_type = action;
+
+			misspelled_count++;
+			if (spelling_error)
+				spelling_error->Release();
+		}
+		spell_error_enum->Release();
+		*errors = ctx->last_errors;
+		return misspelled_count;
 	} else {
 		return BPSPELLER_LANG_IFACE_ERROR;
 	}
@@ -210,3 +261,4 @@ BPSPELLER_API void FreeSuggestions(BPSpellerCtxPtr ctx)
 	ctx->last_suggestions = nullptr;
 	ctx->suggestion_count = 0;
 }
+

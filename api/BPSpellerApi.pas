@@ -35,6 +35,14 @@ const
   BPSPELLER_INVALID_ARGS = -6;
 
   BPSpellerDll = 'BPSpeller.dll';
+  
+type
+  TBPSpellerError = packed record
+    error_type: integer;
+    starting_at: integer;
+    error_length: integer;
+  end;
+  PBPSpellerError = ^TBPSpellerError;
 
 {$IFDEF BPSPELLER_STATIC}
 function InitializeSpeller: pointer;
@@ -42,6 +50,8 @@ function InitializeSpeller: pointer;
 function SetSpellerLanguage(ctx: pointer; lang: PWideChar): integer;
   cdecl; external BPSpellerDll;
 function CheckWord(ctx: pointer; word: PWideChar): integer;
+  cdecl; external BPSpellerDll;
+function CheckSentence(ctx: pointer; sentence: PWideChar; var errors: PBPSpellerError): integer;
   cdecl; external BPSpellerDll;
 function GetSuggestions(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer;
   cdecl; external BPSpellerDll;
@@ -53,6 +63,7 @@ procedure FreeSuggestions(ctx: pointer);
 var
  SetSpellerLanguage: function(ctx: pointer; lang: PWideChar): integer; cdecl;
  CheckWord: function (ctx: pointer; word: PWideChar): integer; cdecl;
+ CheckSentence: function (ctx: pointer; sentence: PWideChar; var errors: PBPSpellerError): integer;;
  GetSuggestions: function(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer; cdecl;
  FreeSpeller: function(ctx: pointer): integer; cdecl;
  FreeSuggestions: procedure(ctx: pointer); cdecl;
@@ -98,6 +109,7 @@ if _bplibhandle = 0 then
 	_InitializeSpeller:=ImportProc('InitializeSpeller');
 	SetSpellerLanguage:=ImportProc('SetSpellerLanguage');
 	CheckWord:=ImportProc('CheckWord');
+	CheckSentence:=ImportProc('CheckSentence');
 	GetSuggestions:=ImportProc('GetSuggestions');
 	FreeSpeller:=ImportProc('FreeSpeller');
 	FreeSuggestions:=ImportProc('FreeSuggestions');

@@ -11,13 +11,21 @@
 extern "C" {
 #endif
 
+struct BPSpellError {
+	int error_type;
+	int starting_at;
+	int error_length;
+};
+
 struct BPSpellerCtx {
 	ISpellCheckerFactory* iface;
 	ISpellChecker* spell_checker;
 	wchar_t** last_suggestions;
+	BPSpellError* last_errors;
 	int suggestion_count;
 	int suggest_buf_size;
-} ;
+	int error_buf_size;
+};
 
 const int BPSPELLER_OK = 0;
 
@@ -49,6 +57,10 @@ BPSPELLER_API int SetSpellerLanguage(BPSpellerCtxPtr ctx, wchar_t* lang);
 
 // check word for misspells with this. returns BPSPELLER_OK if correct, BPSPELLER_BAD_WORD if misspelled
 BPSPELLER_API int CheckWord(BPSpellerCtxPtr ctx, wchar_t* tocheck);
+
+// check entire sentence for correctness, returns number of errors.
+// if "errors" is not nullptr, it'll pass there a pointer to actual error descriptions
+BPSPELLER_API int CheckSentence(BPSpellerCtxPtr ctx, wchar_t* tocheck, BPSpellError** errors);
 
 // if misspelled, ask for suggestions with this
 BPSPELLER_API int GetSuggestions(BPSpellerCtxPtr ctx, wchar_t* tocheck, wchar_t*** suggestions, int* num);
