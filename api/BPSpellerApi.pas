@@ -63,7 +63,7 @@ procedure FreeSuggestions(ctx: pointer);
 var
  SetSpellerLanguage: function(ctx: pointer; lang: PWideChar): integer; cdecl;
  CheckWord: function (ctx: pointer; word: PWideChar): integer; cdecl;
- CheckSentence: function (ctx: pointer; sentence: PWideChar; var errors: PBPSpellerError): integer;;
+ CheckSentence: function (ctx: pointer; sentence: PWideChar; var errors: PBPSpellerError): integer; cdecl;
  GetSuggestions: function(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer; cdecl;
  FreeSpeller: function(ctx: pointer): integer; cdecl;
  FreeSuggestions: procedure(ctx: pointer); cdecl;

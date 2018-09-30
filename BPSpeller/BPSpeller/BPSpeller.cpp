@@ -96,29 +96,30 @@ BPSPELLER_API int CheckSentence(BPSpellerCtxPtr ctx, wchar_t* tocheck, BPSpellEr
 		int misspelled_count = 0;
 		ISpellingError* spelling_error = nullptr;
 		while (S_OK == spell_error_enum->Next(&spelling_error)) {
-			
-			if (ctx->error_buf_size  <= misspelled_count) {
-				int newsize = (ctx->error_buf_size > 0) ? ctx->error_buf_size * 2 : 4;
-				BPSpellError* newbuf = (BPSpellError*)realloc((void*)ctx->last_errors, newsize * sizeof(BPSpellError));
-				if (newbuf) {
-					ctx->last_errors = newbuf;
-					ctx->error_buf_size = newsize;
-				} else {
-					spelling_error->Release();
-					return BPSPELLER_LANG_IFACE_ERROR; // TODO: proper error
+			if (errors) {
+				if (ctx->error_buf_size <= misspelled_count) {
+					int newsize = (ctx->error_buf_size > 0) ? ctx->error_buf_size * 2 : 4;
+					BPSpellError* newbuf = (BPSpellError*)realloc((void*)ctx->last_errors, newsize * sizeof(BPSpellError));
+					if (newbuf) {
+						ctx->last_errors = newbuf;
+						ctx->error_buf_size = newsize;
+					} else {
+						spelling_error->Release();
+						return BPSPELLER_LANG_IFACE_ERROR; // TODO: proper error
+					}
 				}
+
+				ULONG res;
+				spelling_error->get_Length(&res);
+				ctx->last_errors[misspelled_count].error_length = res;
+
+				spelling_error->get_StartIndex(&res);
+				ctx->last_errors[misspelled_count].starting_at = res;
+
+				CORRECTIVE_ACTION action;
+				spelling_error->get_CorrectiveAction(&action);
+				ctx->last_errors[misspelled_count].error_type = action;
 			}
-
-			ULONG res; 
-			spelling_error->get_Length(&res);
-			ctx->last_errors[misspelled_count].error_length = res;
-
-			spelling_error->get_StartIndex(&res);
-			ctx->last_errors[misspelled_count].starting_at = res;
-
-			CORRECTIVE_ACTION action;
-			spelling_error->get_CorrectiveAction(&action);
-			ctx->last_errors[misspelled_count].error_type = action;
 
 			misspelled_count++;
 			if (spelling_error)
