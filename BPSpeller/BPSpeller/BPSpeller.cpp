@@ -251,6 +251,63 @@ exit:
 	return spell_status;
 }
 
+#define MAX_BATCH 32
+BPSPELLER_API int GetSupportedLanguages(BPSpellerCtxPtr ctx, wchar_t** destbuf, size_t bufsize)
+{
+	if (!ctx)
+		return BPSPELLER_BAD_CTX;
+	if (destbuf && (!bufsize))
+		return BPSPELLER_INVALID_ARGS;
+	IEnumString* langs = nullptr;
+	int retval = 0;
+	if (SUCCEEDED(ctx->iface->get_SupportedLanguages(&langs))) {
+		ULONG fetched = 0;
+		if (destbuf) {
+			// we got dest buffer, copy as many ptrs as possible
+			// ignore result, because it can return S_FALSE if it returns less
+			// strings than buffer can hold.
+			langs->Next(bufsize / sizeof(wchar_t), destbuf, &fetched);
+			if (fetched > 0) {
+				// swap suggestion buffer with supported languages list, so user don't have to
+				// separately free it immediately
+				FreeSuggestions(ctx);
+				ctx->last_suggestions = (wchar_t**) malloc(sizeof(wchar_t*) * fetched);
+				if (ctx->last_suggestions) {
+					ctx->suggestion_count = fetched;
+					ctx->suggest_buf_size = fetched;
+					memcpy((void*)ctx->last_suggestions, (void*)destbuf, sizeof(wchar_t*) * fetched);
+					retval = fetched;
+				} else {
+					// free result. we either leak memory or return error... I prefer error.
+					for (ULONG i = 0; i < fetched; ++i) {
+						CoTaskMemFree(destbuf[i]);
+						memset(destbuf, 0, bufsize);
+					}
+					retval = BPSPELLER_LANG_IFACE_ERROR;
+				}
+			}
+		} else {
+			// go slowly through list and free each string immediately
+			LPOLESTR strings[MAX_BATCH];
+			while (langs->Next(MAX_BATCH, &strings[0], &fetched) == S_OK) {
+				retval += fetched;
+				for (ULONG i = 0; i < fetched; ++i) {
+					CoTaskMemFree(strings[i]);
+				}
+				fetched = 0;
+			}
+			if (fetched) {
+				for (ULONG i = 0; i < fetched; ++i) {
+					CoTaskMemFree(strings[i]);
+				}
+				retval += fetched;
+			}
+		}
+		langs->Release();
+	}
+	return retval;
+}
+
 BPSPELLER_API void FreeSuggestions(BPSpellerCtxPtr ctx)
 {
 	if (!ctx || !ctx->last_suggestions)

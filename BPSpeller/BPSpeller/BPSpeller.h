@@ -65,6 +65,11 @@ BPSPELLER_API int CheckSentence(BPSpellerCtxPtr ctx, wchar_t* tocheck, BPSpellEr
 // if misspelled, ask for suggestions with this
 BPSPELLER_API int GetSuggestions(BPSpellerCtxPtr ctx, wchar_t* tocheck, wchar_t*** suggestions, int* num);
 
+// return the list of supported languages in form of array of pointers to null-separated widestrings.
+// bufsize (size in bytes) must be large enough to hold all pointers - if not, some might not be returned.
+// pass nullptr to destbuf to get required size (two step approach might be slower, though)
+BPSPELLER_API int GetSupportedLanguages(BPSpellerCtxPtr ctx, wchar_t** destbuf, size_t bufsize);
+
 // get rid of speller context with this
 BPSPELLER_API int FreeSpeller(BPSpellerCtxPtr ctx);
 

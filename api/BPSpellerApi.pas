@@ -55,6 +55,8 @@ function CheckSentence(ctx: pointer; sentence: PWideChar; var errors: PBPSpeller
   cdecl; external BPSpellerDll;
 function GetSuggestions(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer;
   cdecl; external BPSpellerDll;
+function GetSupportedLanguages(ctx: pointer; langs: PPWideChar; buflen: integer): integer;
+  cdecl; external BPSpellerDll;
 function FreeSpeller(ctx: pointer): integer;
   cdecl; external BPSpellerDll;
 procedure FreeSuggestions(ctx: pointer);
@@ -65,6 +67,7 @@ var
  CheckWord: function (ctx: pointer; word: PWideChar): integer; cdecl;
  CheckSentence: function (ctx: pointer; sentence: PWideChar; var errors: PBPSpellerError): integer; cdecl;
  GetSuggestions: function(ctx: pointer; tocheck: PWideChar; var suggestions: PPWideChar; var num: integer): integer; cdecl;
+ GetSupportedLanguages: function(ctx: pointer; langs: PPWideChar; buflen: integer): integer; cdecl;
  FreeSpeller: function(ctx: pointer): integer; cdecl;
  FreeSuggestions: procedure(ctx: pointer); cdecl;
 
@@ -111,6 +114,7 @@ if _bplibhandle = 0 then
 	CheckWord:=ImportProc('CheckWord');
 	CheckSentence:=ImportProc('CheckSentence');
 	GetSuggestions:=ImportProc('GetSuggestions');
+	GetSupportedLanguages:=ImportProc('GetSupportedLanguages');
 	FreeSpeller:=ImportProc('FreeSpeller');
 	FreeSuggestions:=ImportProc('FreeSuggestions');
 	if bad_dll then

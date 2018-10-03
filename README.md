@@ -18,11 +18,16 @@ The goal of this project is to simplify access to [Windows system speller](https
 
 Currently, BPSpeller is missing the following:
 * Adding and removing words from dictionary.
-  Would be nice to have, as it would affect entire user experience - adding exception in one program would be instantly visible in other
-* Accessing list of available languages
-  That's provided by the system interfaces, but left out for now
+
+Would be nice to have, as it would affect entire user experience - adding exception in one program would be instantly visible in other
+
+~~* Accessing list of available languages~~
+
+~~That's provided by the system interfaces, but left out for now~~ 
+
 * No version checking
-  It probably should fail in some special way when ran on Windows 7 and earlier.
+
+It probably should fail in some special way when ran on Windows 7 and earlier. Currently implemented in Delphi interface only.s
 
 # How to build it?
 * Get VS 2015 Community Edition (might work with earlier edition, assuming proper version of SDK is installed)
