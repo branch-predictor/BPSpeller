@@ -179,9 +179,10 @@ BPSPELLER_API int GetSuggestions(BPSpellerCtxPtr ctx, wchar_t* tocheck, wchar_t*
 						HRESULT hr = ctx->spell_checker->Suggest(tocheck, &sug_enum);
 						if (S_OK == hr) {
 							// check suggestions only for misspelled words
-							LPOLESTR str = nullptr;
-							while (sug_enum->Next(1, &str, nullptr) == S_OK) {
-								(*suggestions)[actual_num++] = str;
+							ULONG fetched = 0;
+							while (sug_enum->Next(max_num - actual_num, &(*suggestions)[actual_num], &fetched) == S_OK) {
+								actual_num += fetched;
+								fetched = 0;
 								if (actual_num >= max_num) {
 									max_num *= 2;
 									wchar_t** new_suggestions = (wchar_t**)realloc((void*)(*suggestions), sizeof(wchar_t**) * max_num);
@@ -197,8 +198,8 @@ BPSPELLER_API int GetSuggestions(BPSpellerCtxPtr ctx, wchar_t* tocheck, wchar_t*
 										goto exit;
 									}
 								}
-								str = nullptr;
 							}
+							actual_num += fetched;
 						} else if (S_FALSE == hr) {
 							// you shouldn't ask for suggestions on valid word...
 							spell_status = BPSPELLER_INVALID_ARGS;
